@@ -96,7 +96,7 @@ Le fichier [`.github/workflows/ci.yaml`](https://github.com/InseeFrLab/template-
 
 Dans ce tuto, on utilise la forge [DockerHub](https://hub.docker.com/), idéale pour les projets open-source. Une création de compte est nécessaire pour pouvoir l'utiliser, ainsi qu'un dépôt associé au projet. Une fois ces étapes effectuées, il faut :
 - générer un *token* d'authentification au DockerHub. La procédure est décrite [ici](https://docs.docker.com/docker-hub/access-tokens/#create-an-access-token) ;
-- permettre au CI GitHub de s'authentifier auprès du DockerHub. Pour cela, on indique le nom d'utilisateur DockerHub (`DOCKERHUB_USERNAME`) et le token précédemment créé (`DOCKERHUB_TOKEN`) comme secrets du dépôt GitHub. La procédure est décrite [ici](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository).
+- permettre au CI GitHub de s'authentifier auprès du DockerHub. Pour cela, on indique le nom d'utilisateur DockerHub ([`DOCKERHUB_USERNAME`](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml#L28)) et le token précédemment créé ([`DOCKERHUB_TOKEN`](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml#L29)) comme secrets du dépôt GitHub. La procédure est décrite [ici](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository).
 - modifier le [nom de l'image](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml#L19) avec vos informations : `<username_docker_hub>/<project_name>`.
 
 ### Déploiement de l'application

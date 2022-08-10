@@ -1,10 +1,6 @@
-# Un template de déploiement d'une application Shiny sur le SSP Cloud
+# Tutoriel : déploiement d'une application Shiny sur le SSP Cloud
 
 ## Sommaire
-
-- [Contexte](#contexte)
-- [Environnement](#environnement)
-- [Tutoriel](#tutoriel)
 
 ## Contexte
 
@@ -182,16 +178,77 @@ Le fichier [data.R](https://github.com/InseeFrLab/template-shiny-app/blob/main/m
 
 ### Déploiement du chart Helm
 
-Finalement, pour déployer l'application sur le cluster :
-- lancer un service VSCode sur le cluster *en mettant des droits Admin sur le namespace Kubernetes* (à l'initialisation du service dans l'IHM : onglet Kubernetes -> "Role" -> sélectionner "admin")
-- lancer un terminal
+Finalement, pour déployer l'application sur le cluster à partir du terminal d'un service VSCode :
 - cloner le dépôt contenant le chart de **votre** application (pas le template)
-- importer les dépendances (en l'occurence, le chart [Shiny](https://github.com/InseeFrLab/helm-charts/tree/master/charts/shiny)) : `helm dependency update nom_du_repo`
-- exécuter la commande : `helm install nom_du_repo --generate-name`
+- importer les dépendances (en l'occurence, le chart [Shiny](https://github.com/InseeFrLab/helm-charts/tree/master/charts/shiny)) avec la commande `helm dependency update chemin_du_depot_chart`
+- installer le chart Helm : `helm install chemin_du_depot_chart --generate-name`
 
-Si tout a fonctionné, un message devrait confirmer l'instanciation du chart, et l'application devrait désormais être disponible à l'URL spécifiée [dans le fichier `values.yaml`](https://github.com/InseeFrLab/helm-charts/blob/master/charts/shiny/values.yaml#L46).
+Si tout a fonctionné, un message devrait confirmer l'instanciation du chart. On peut vérifier que ce dernier a bien été déployé avec la commande `helm ls`, qui liste l'ensemble des instances de Chart helm déployées sur le cluster.
 
-### TODO
+## *Debugging*/maintenance de l'application
 
-- debugging pods/helm
-- LDAP et utilisation concurrente avec ShinyProxy
+Le message précédent signifie simplement qu'un chart Helm a été déployé, mais ne dit rien sur le fait que l'application tourne effectivement ! En pratique, il est possible — et même probable — qu'il faille résoudre certains problèmes avant que l'application ne tourne correctement, c'est à dire qu'elle soit disponible à l'adresse indiquée dans le Chart. Et même si par chance l'application tournait correctement du premier coup, il est probable que son utilisation donne lieu à des bugs à l'avenir, il est donc nécessaire de se préoccuper de sa maintenance. Tout cela doit nous amener à nous intéresser aux procédures permettant de **débugguer une application déployée**.
+
+La difficulté principale est que **les sources d'erreur sont multiples** : code source de l'application, *Dockerfile* incorrectement spécifié, problèmes de secrets Kubernetes, problème de configuration du déploiement... La bonne nouvelle est que quelques commandes Kubernetes bien choisies permettent généralement de repérer rapidement la source de l'erreur et de la réparer.
+
+### Commandes de *debugging*
+
+En déployant le chart Helm, on a déployé un ensemble de ressources Kubernetes nécessaires au fonctionnement de l'application. La ressource qui nous intéresse principalement pour la phase de *debugging* est le [Pod](https://kubernetes.io/fr/docs/concepts/workloads/pods/pod-overview/), l'unité d'exécution de base de Kubernetes, qui encapsule notre image applicative.
+
+La première étape consiste donc à lister les différents *Pods* déployés dans notre *Namespace*, afin d'identifier celui correspondant à notre application.
+
+```
+$ kubectl get pods
+NAME                                                   READY   STATUS    RESTARTS   AGE
+postgresql-db-0                                        1/1     Running   0          8d
+template-shiny-deployment-1660144966-96f75849d-dbsr9   1/1     Running   0          8d
+vscode-14710-7467fd678f-828kj                          1/1     Running   0          7d6h
+```
+
+3 *Pods* sont actuellement déployés dans cet exemple. D'après les noms, celui qui nous intéresse est le second. Dans l'exemple, le *Pod* est marqué comme *Running* et est donc a priori en bonne santé. Il peut arriver que le pod soit en *Error* ou encore *CrashLoopBackoff*, ce qui peut signaler différents problèmes de déploiement.
+
+Une première étape pour tenter d'isoler la cause d'un déploiement en échec peut être de "**décrire** la ressource, en l'occurence le *Pod*. Cela permet de voir comment le *Pod* a été déployé (quelle image, quelles variables d'environnements, quels volumes attachés, etc.) et quels évènements se sont passés lors du déroulement. Souvent, les problèmes liés à la configuration du déploiement s'identifient ici.
+
+```
+$ kubectl describe pod template-shiny-deployment-1660144966-96f75849d-dbsr9
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  105s  default-scheduler  Successfully assigned user-avouacr/template-shiny-deployment-1660144966-96f75849d-dbsr9 to boss8
+  Normal  Pulled     105s  kubelet            Container image "alpine" already present on machine
+  Normal  Created    105s  kubelet            Created container wait-for-postgresql
+  Normal  Started    105s  kubelet            Started container wait-for-postgresql
+  Normal  Pulling    83s   kubelet            Pulling image "inseefrlab/shiny-app-template:1.0.1"
+  Normal  Pulled     61s   kubelet            Successfully pulled image "inseefrlab/shiny-app-template:1.0.1" in 22.225532922s
+  Normal  Created    60s   kubelet            Created container shiny
+  Normal  Started    60s   kubelet            Started container shiny
+```
+
+Dans cet exemple, tout semble s'être bien déroulé : Kubernetes a téléchargé (*pull*) l'image voulue, et a créé le conteneur associé, qui a démarré normalement.
+
+Dans le cas où l'erreur provient de l'application elle-même, il est nécessaire d'aller analyser les *logs* du conteneur de notre application, ou de manière équivalente ceux du *Pod*, qui encapsule le conteneur.
+
+```
+$ kubectl logs template-shiny-deployment-1660144966-96f75849d-dbsr9
+Defaulted container "shiny" out of: shiny, wait-for-postgresql (init)
+Loading required package: shiny
+
+Listening on http://0.0.0.0:3838
+```
+
+Dans cet exemple, rien à signaler : le conteneur a executé la [commande de lancement](https://github.com/InseeFrLab/template-shiny-app/blob/main/Dockerfile#L24), ce qui a lancé l'application *Shiny* qui écoute sur l'adresse attendue.
+
+Souvent, les erreurs reportées dans les *logs* permettent de débugguer l'application. Parfois, ils sont insuffisants. Dans ce cas, il peut être utile de rentrer directement dans le conteneur en cours d'exécution, et d'y ouvrir un terminal. Il est alors possible d'y lancer R, et de tester le code d'exécution de l'application commande par commande pour identifier précisément la source de l'erreur.
+
+```
+$ kubectl exec -it template-shiny-deployment-1660144966-96f75849d-dbsr9 -- bash
+```
+
+### Procédure de *debugging*
+
+## Pour aller plus loin
+
+### Utilisation concurrente
+
+### Authentification
+

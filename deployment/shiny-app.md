@@ -65,7 +65,7 @@ Afin de faciliter le déploiement, il est recommandé de suivre au maximum la st
 
 La méthode de *packaging* de l'application shiny proposée dans ce tutoriel reste assez minimale, et convient donc avant tout pour des applications d'une complexité limitée. Dès lors que l'on s'oriente vers des applications plus complexes, il est préférable d'adopter un framework adapté aux contraintes de production, comme [golem](https://github.com/ThinkR-open/golem). Le livre [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/index.html) fournit une présentation claire et exhaustive du sujet.
 
-#### Conteneurisation
+### Conteneurisation
 
 Pour pouvoir être déployée sur un cluster Kubernetes, une application doit nécessairement être mise à disposition sous la forme d'une **image Docker**. Concrètement, cette étape permet de rendre l'application **portable** : une fois que l'image Docker est construite et fonctionne correctement, elle peut être déployée sur n'importe quel environnement d'éxécution avec la certitude qu'elle fonctionnera de manière attendue, peu importe l'environnement qui a servir à la développer.
 
@@ -90,7 +90,7 @@ flowchart TB;
 - **exposer le port utilisé par l'application**. Il n'est généralement pas nécessaire de changer le port exposé.
 - **entrypoint**, i.e. la commande de lancement du conteneur. Il n'est pas nécessaire de modifier cette commande si le nom de la fonction dans le fichier `main.R` n'a pas été modifié.
 
-#### Intégration continue (CI)
+### Intégration continue (CI)
 
 Le fichier [`.github/workflows/ci.yaml`](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml) contient une suite d'instructions qui vont s'éxécuter à chaque fois qu'une modification du code sur le dépôt Git est effectuée. C'est l'approche de l'intégration continue : à chaque fois que le code source de l'application est modifié (nouvelles fonctionnalités, correction de bugs, etc.), l'image `Docker` est automatiquement reconstruite et envoyée sur le registry `Docker` de votre choix.
 
@@ -101,28 +101,26 @@ Dans ce tuto, on utilise la forge [DockerHub](https://hub.docker.com/), idéale 
 
 ### Déploiement de l'application
 
-#### Chart Helm de l'application
+#### Chart Helm
 
-Le déploiement de l'application nécessite la création d'un chart Helm. Concrètement, un chart Helm peut être vu comme un package Kubernetes, contenant les ressources nécessaires au déploiement d'une application. 
+Le déploiement de l'application nécessite la création d'un [chart Helm](https://helm.sh/). Concrètement, un chart Helm peut être vu comme un package Kubernetes, contenant les ressources nécessaires au déploiement d'une application. 
 
-Ce dépôt contient un [chart Helm](https://helm.sh/) permettant le déploiement de l'[application template](https://github.com/InseeFrLab/template-shiny-app). Il convient donc de *forker* également ce second repository, qui va servir de base pour le chart `Helm` de votre application. Ce chart contient pour l'essentiel deux fichiers.
+Le [dépôt de déploiement](https://github.com/InseeFrLab/template-shiny-deployment) contient un chart Helm permettant le déploiement de l'[application template](https://github.com/InseeFrLab/template-shiny-app). Il convient donc de *forker* également ce second repository, qui va servir de base pour le chart `Helm` de votre application. Ce chart contient pour l'essentiel deux fichiers.
 
-**Le fichier `Chart.yaml`** contient les métadonnées du chart ([nom](https://github.com/InseeFrLab/helm-charts-shiny-apps/blob/main/charts/quakes/Chart.yaml#L2), [version](https://github.com/InseeFrLab/helm-charts-shiny-apps/blob/main/charts/quakes/Chart.yaml#L6)) ainsi que ses dépendances, i.e. les potentiels autres charts `Helm` dont il hérite. Dans notre cas, [on voit](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/Chart.yaml#L5) que le chart hérite du chart [Shiny](https://github.com/InseeFrLab/helm-charts/tree/master/charts/shiny) d'[InseeFrLab](https://github.com/InseeFrLab). Ce chart spécifie généralement les ressources Kubernetes nécessaires au déploiement d'une application Shiny, de sorte à ce que l'on ait qu'à modifier les valeurs d'instanciation pour déployer notre application.
+**Le fichier `Chart.yaml`** contient les métadonnées du chart ([nom](https://github.com/InseeFrLab/helm-charts-shiny-apps/blob/main/charts/quakes/Chart.yaml#L2), [version](https://github.com/InseeFrLab/helm-charts-shiny-apps/blob/main/charts/quakes/Chart.yaml#L6)) ainsi que ses dépendances, i.e. les potentiels autres charts `Helm` dont il hérite. Dans notre cas, on voit que le chart [hérite](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/Chart.yaml#L5) du chart [Shiny](https://github.com/InseeFrLab/helm-charts/tree/master/charts/shiny) d'[InseeFrLab](https://github.com/InseeFrLab). Ce dernier chart, plus complexe, spécifie généralement les ressources Kubernetes nécessaires au déploiement d'une application Shiny, de sorte à ce que l'on ait qu'à modifier les valeurs d'instanciation pour déployer notre application.
 
-**Le fichier `values.yaml`** contient précisément les valeurs que l'on modifie par rapport au chart général. Les modifications à apporter dépendent naturellement de ce que réalise en pratique l'application, car cela conditionne les ressources dont elle a besoin. Dans un premier temps, il nous faut modifier : 
-- [le chemin et nom de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L3) (paramètre `shiny.image.repository`)
-- [le tag de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L4), i.e. sa version (paramètre `shiny.image.tag`)
-- [l'hostname de l'Ingress](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L7), l'URL à laquelle l'application sera accessible une fois déployée (paramètre `shiny.ingress.hostname` avec comme nom de domaine obligatoire `lab.sspcloud.fr`); par exemple dans notre cas :`myshinyapp.lab.sspcloud.fr`.
+**Le fichier `values.yaml`** contient précisément les valeurs que l'on modifie par rapport au chart général (parent). Les modifications à apporter dépendent naturellement de ce que réalise en pratique l'application, car cela conditionne les ressources dont elle a besoin. Dans un premier temps, il nous faut modifier : 
+- [le chemin et nom de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L3)
+- [le tag de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L4). Il s'agit du tag de l'image sur le DockerHub. Par défault, et pendant la phase de développement, on peut indiquer le tag `latest` pour signifier "la dernière version de l'image qui a été produite". Lorsque l'application est en production, il est préférable d
+- [l'hostname de l'Ingress](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L7), i.e. l'URL à laquelle l'application sera accessible une fois déployée. Cette URL doit être de la forme `*.lab.sspcloud.fr` ; par exemple dans notre cas : `myshinyapp.lab.sspcloud.fr`.
 
 #### Utilisation du stockage de données S3 avec MinIO
 
-Si l'application Shiny utilise des données en entrée stockées sur MinIO, il faut donner la valeur `true` au [paramètre shiny.s3.enabled](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L9).
-
-Par ailleurs, il faut fournir à l'application les **informations d'authentification** au service de stockage. Ces informations sont sensibles, et ne doivent donc jamais figurer en clair dans le code source de l'application. Pour éviter ce risque, on va inscrire ces informations dans un objet Kubernetes appelé **Secret**, qui va nous permettre de les passer à l'application sous la forme de **variables d'environnement**.
+Si votre application n'utilise pas de données externes, ou contient ses propres données dans l'image Docker, vous pouvez donner la valeur `false` au paramètre [shiny.s3.enabled](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L9) et passer cette partie. A l'inverse, si l'application Shiny utilise des données en entrée stockées sur MinIO, il faut donner la valeur `true` au paramètre et fournir à l'application les **informations d'authentification** au service de stockage. Ces informations sont sensibles, et ne doivent donc jamais figurer en clair dans le code source de l'application ou sur un dépôt GitHub. Pour éviter ce risque, on va inscrire ces informations dans un objet Kubernetes appelé [Secret](https://kubernetes.io/fr/docs/concepts/configuration/secret/), qui va nous permettre de les passer à l'application sous la forme de [variables d'environnement](https://doc.ubuntu-fr.org/variables_d_environnement).
 
 La première étape est de créer un compte de service sur la [console MinIO](https://minio-console.lab.sspcloud.fr/). Pour ce faire :
 - menu "Identity" -> "Service Accounts" -> "Create Service Account" -> "Create"
-- comme précédemment, conserver à l'écran les informations de connexion
+- comme précédemment, conserver à l'écran les informations de connexion.
 
 La seconde étape est de créer un Secret Kubernetes contenant ces informations. Pour être accessible dans l'application, ce secret doit être appliqué comme une ressource dans le namespace Kubernetes dans lequel sera déployé l'application. Pour cela :
 - Écrire le template suivant dans un fichier `quelconque.yaml` :

@@ -2,6 +2,27 @@
 
 ## Sommaire
 
+- [Tutoriel : déploiement d'une application Shiny sur le SSP Cloud](#tutoriel---d-ploiement-d-une-application-shiny-sur-le-ssp-cloud)
+  * [Sommaire](#sommaire)
+  * [Contexte](#contexte)
+  * [Environnement](#environnement)
+  * [Développement de l'application](#d-veloppement-de-l-application)
+    + [Mettre les données d'entrée sur MinIO](#mettre-les-donn-es-d-entr-e-sur-minio)
+    + [Phase de développement en self](#phase-de-d-veloppement-en-self)
+    + [Packaging](#packaging)
+    + [Conteneurisation](#conteneurisation)
+    + [Intégration continue (CI)](#int-gration-continue--ci-)
+  * [Déploiement de l'application](#d-ploiement-de-l-application)
+    + [Création d'un Chart Helm](#cr-ation-d-un-chart-helm)
+    + [Utilisation du stockage de données S3 avec MinIO](#utilisation-du-stockage-de-donn-es-s3-avec-minio)
+    + [Utilisation d'une base de données PostgreSQL](#utilisation-d-une-base-de-donn-es-postgresql)
+    + [Déploiement du chart Helm](#d-ploiement-du-chart-helm)
+  * [*Debugging*/maintenance de l'application](#-debugging--maintenance-de-l-application)
+    + [Commandes de *debugging*](#commandes-de--debugging-)
+    + [Procédure de *debugging*](#proc-dure-de--debugging-)
+  * [Pour aller plus loin](#pour-aller-plus-loin)
+    + [ShinyProxy](#shinyproxy)
+
 ## Contexte
 
 Ce tutoriel documente le processus de déploiement d'une application web interactive sur le [SSP Cloud](https://datalab.sspcloud.fr/home). La procédure est illustrée à travers l'exemple du déploiement d'une [application R Shiny](https://shiny.rstudio.com/). On utilise deux dépôts GitHub qui font office de *templates* :
@@ -248,7 +269,4 @@ $ kubectl exec -it template-shiny-deployment-1660144966-96f75849d-dbsr9 -- bash
 
 ## Pour aller plus loin
 
-### Utilisation concurrente
-
-### Authentification
-
+### ShinyProxy

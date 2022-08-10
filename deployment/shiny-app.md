@@ -67,10 +67,10 @@ La méthode de *packaging* de l'application shiny proposée dans ce tutoriel res
 
 #### Conteneurisation
 
-Pour pouvoir être déployée sur un cluster Kubernetes, une application doit nécessairement être mise à disposition sous la forme d'une image Docker. Concrètement, cette étape permet de rendre l'application portable : une fois que l'image Docker est construite et fonctionne correctement, elle peut être déployée sur n'importe quel environnement d'éxécution avec la certitude qu'elle fonctionnera de manière attendue, peu importe l'environnement qui a servir à la développer.
+Pour pouvoir être déployée sur un cluster Kubernetes, une application doit nécessairement être mise à disposition sous la forme d'une **image Docker**. Concrètement, cette étape permet de rendre l'application **portable** : une fois que l'image Docker est construite et fonctionne correctement, elle peut être déployée sur n'importe quel environnement d'éxécution avec la certitude qu'elle fonctionnera de manière attendue, peu importe l'environnement qui a servir à la développer.
 
 Le fichier `Dockerfile` situé à la racine du projet contient une suite d'instructions qui permettent de conteneuriser l'application, sous la forme d'une image Docker. Ce fichier contient 5 parties :
-- **appel de l'image Docker de base** : `rocker/shiny`. Il n'est généralement pas nécessaire de changer cette image.
+- **appel de l'image Docker de base** : `rocker/shiny`. Il s'agit d'une image de base contenant `R`, le serveur `Shiny`, ainsi que les librairies systèmes et packages nécessaires au fonctionnement des applications `Shiny`. Elle est maintenue dans le cadre du projet [Rocker](https://rocker-project.org/).
 - **installation des librairies système** nécessaires pour installer les packages R utilisés par l'application. Cette liste se construit par un processus itératif :
 ```mermaid
 flowchart TB;
@@ -92,9 +92,12 @@ flowchart TB;
 
 #### Intégration continue (CI)
 
-Le fichier `.github/workflows/ci.yaml` contient une suite d'instructions qui vont s'éxécuter à chaque fois qu'une modification du code sur le dépôt Git est effectuée. C'est l'approche de l'intégration continue : à chaque fois que le code source de l'application est modifié (nouvelles fonctionnalités, correction de bugs, etc.), l'image `Docker` est automatiquement reconstruite et envoyée sur le registry `Docker` de votre choix.
+Le fichier [`.github/workflows/ci.yaml`](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml) contient une suite d'instructions qui vont s'éxécuter à chaque fois qu'une modification du code sur le dépôt Git est effectuée. C'est l'approche de l'intégration continue : à chaque fois que le code source de l'application est modifié (nouvelles fonctionnalités, correction de bugs, etc.), l'image `Docker` est automatiquement reconstruite et envoyée sur le registry `Docker` de votre choix.
 
-Dans ce tuto, on utilise la forge [DockerHub](https://hub.docker.com/), idéale pour les projets open-source. Une création de compte est nécessaire pour pouvoir l'utiliser, ainsi qu'un dépôt associé au projet. Une fois ces étapes effectuées, il faut modifier le nom de l'image dans le fichier [ci.yaml](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml#L19) avec vos informations : `<username_docker_hub>/<project_name>`.
+Dans ce tuto, on utilise la forge [DockerHub](https://hub.docker.com/), idéale pour les projets open-source. Une création de compte est nécessaire pour pouvoir l'utiliser, ainsi qu'un dépôt associé au projet. Une fois ces étapes effectuées, il faut :
+- générer un *token* d'authentification au DockerHub. La procédure est décrite [ici](https://docs.docker.com/docker-hub/access-tokens/#create-an-access-token) ;
+- permettre au CI GitHub de s'authentifier auprès du DockerHub. Pour cela, on indique le nom d'utilisateur DockerHub (`DOCKERHUB_USERNAME`) et le token précédemment créé (`DOCKERHUB_TOKEN`) comme secrets du dépôt GitHub. La procédure est décrite [ici](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository).
+- modifier le [nom de l'image](https://github.com/InseeFrLab/template-shiny-app/blob/main/.github/workflows/ci.yaml#L19) avec vos informations : `<username_docker_hub>/<project_name>`.
 
 ### Déploiement de l'application
 
@@ -190,6 +193,5 @@ Si tout a fonctionné, un message devrait confirmer l'instanciation du chart, et
 ### TODO
 
 - debugging pods/helm
-- industrialiser avec Golem
 - LDAP et utilisation concurrente avec ShinyProxy
 - GitOps avec Argo CD

@@ -3,6 +3,7 @@
 ## Sommaire
 
 - [Contexte](#contexte)
+- [Tutoriel](#tutoriel)
 
 ## Contexte
 
@@ -13,6 +14,8 @@ La procédure sera illustrée à travers l'exemple du déploiement d'une [applic
 - un [second dépôt](https://github.com/InseeFrLab/template-shiny-deployment) contenant les fichiers de configuration du déploiement de l'application.
 
 En pratique, ce tutoriel peut être facilement adapté pour déployer des applications web interactives utilisant des *fameworks* différents, comme [Flask](https://flask.palletsprojects.com/en/2.2.x/) ou [Streamlit](https://streamlit.io/) en `Python` par exemple.
+
+## Tutoriel
 
 ### Mettre les données d'entrée sur MinIO
 
@@ -59,6 +62,8 @@ L'application Shiny est intégrée dans un package R appelé `myshinyapp`. Les p
 Le fichier `DESCRIPTION` doit être rempli avec précaution. Il contient les métadonnées essentielles du package (titre, version, description..). En particulier, il faut spécifier les dépendances de l'application, i.e. les différents packages R tiers nécessaires au bon foncitonnement de l'application.
 
 Afin de faciliter le déploiement, il est recommandé de suivre au maximum la structure proposée via ce template. Pour cela, on peut forker le projet sur GitLab et l'adapter à son application en modifiant les titres, contenus des scripts, documentation, etc.
+
+La méthode de *packaging* de l'application shiny proposée dans ce tutoriel reste assez minimale, et convient donc avant tout pour des applications d'une complexité limitée. Dès lors que l'on s'oriente vers des applications plus complexes, il est préférable d'adopter un framework adapté aux contraintes de production, comme [golem](https://github.com/ThinkR-open/golem). Le livre [Engineering Production-Grade Shiny Apps](https://engineering-shiny.org/index.html) fournit une présentation claire et exhaustive du sujet.
 
 #### Conteneurisation
 

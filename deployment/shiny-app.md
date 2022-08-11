@@ -283,7 +283,7 @@ Dans ce cas, la procédure à appliquer est la suivante :
 - le processus de CI va se lancer et regénérer une nouvelle image Docker ;
 - modifier le [tag de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L4) le cas échéant dans le fichier `values.yaml` ;
 - mettre à jour le déploiement du chart :
-  - `helm ls` pour identifier le nom du chart actuellement déployé
+  - `helm ls` pour identifier le nom du chart actuellement déployé ;
   - `helm upgrade nom_chart_deploye chemin_du_depot_chart` pour mettre à jour le déploiement avec la nouvelle version du Chart.
 
 #### Si l'erreur vient de la configuration du déploiement
@@ -294,13 +294,11 @@ Dans ce cas, la procédure à appliquer est plus courte, dans la mesure où il n
 - utiliser les commandes décrites précédemment — en particulier `kubectl describe pod nom_du_pod` — pour identifier le problème ;
 - corriger le chart ;
 - mettre à jour le déploiement du chart :
-  - `helm ls` pour identifier le nom du chart actuellement déployé
+  - `helm ls` pour identifier le nom du chart actuellement déployé ;
   - `helm upgrade nom_chart_deploye chemin_du_depot_chart` pour mettre à jour le déploiement avec la nouvelle version du Chart.
-
-### Problèmes fréquents
 
 ## Pour aller plus loin
 
 ### ShinyProxy
 
-
+TODO

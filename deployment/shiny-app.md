@@ -227,7 +227,7 @@ vscode-14710-7467fd678f-828kj                          1/1     Running   0      
 
 3 *Pods* sont actuellement déployés dans cet exemple. D'après les noms, celui qui nous intéresse est le second. Dans l'exemple, le *Pod* est marqué comme *Running* et est donc a priori en bonne santé. Il peut arriver que le pod soit en *Error* ou encore *CrashLoopBackoff*, ce qui peut signaler différents problèmes de déploiement.
 
-Une première étape pour tenter d'isoler la cause d'un déploiement en échec peut être de "**décrire**" (*describe*) la ressource, en l'occurence le *Pod*. Cela permet de voir comment le *Pod* a été déployé (quelle image, quelles variables d'environnements, quels volumes attachés, etc.) et quels évènements se sont passés lors du déroulement. Souvent, les problèmes liés à la configuration du déploiement s'identifient ici.
+Une première étape pour tenter d'isoler la cause d'un déploiement en échec peut être de "**décrire**" (*describe*) la ressource, en l'occurence le *Pod*. Cela permet de voir comment le *Pod* a été déployé (quelle image, quelles variables d'environnements, quels volumes attachés, etc.) et quels évènements se sont passés lors du déroulement. Souvent, les problèmes liés à la configuration du déploiement (ex : une erreur dans le nom ou le tag de l'image, un secret manquant, etc.) s'identifient ici.
 
 ```
 $ kubectl describe pod template-shiny-deployment-1660144966-96f75849d-dbsr9
@@ -247,7 +247,7 @@ Events:
 
 Dans cet exemple, tout semble s'être bien déroulé : Kubernetes a téléchargé (*pull*) l'image voulue, et a créé le conteneur associé, qui a démarré normalement.
 
-Dans le cas où l'erreur provient de l'application elle-même, il est nécessaire d'aller analyser les *logs* de notre application, ou de manière équivalente ceux du *Pod*, qui encapsule celle-ci.
+Dans certains cas, l'erreur provient de l'application elle-même, et non de la configuration de son déploiement. Typiquement, pour une application R Shiny, cela se traduit par l'écran qui se grise lors de l'utilisation de l'application, ou bien parfois par des graphiques, tableaux, etc. manquants. Dans ce cas, il est nécessaire d'aller analyser les *logs* de notre application, ou de manière équivalente ceux du *Pod*, qui encapsule celle-ci.
 
 ```
 $ kubectl logs template-shiny-deployment-1660144966-96f75849d-dbsr9
@@ -271,6 +271,36 @@ Il est alors possible d'y lancer R, et de tester le code d'exécution de l'appli
 
 ### Procédure de *debugging*
 
+Comme on l'a vu, la principale difficulté liée au *debugging* d'un déploiement Kubernetes vient de la multiplicité des sources d'erreur possibles. La manière de *debugger* et de redéployer l'application va naturellement dépendre de la source de l'erreur.
+
+#### Si l'erreur vient de l'application
+
+Plaçons-nous d'abord dans le cas (fréquent) où l'erreur provient de l'application elle-même. Les facteurs de ce type d'erreur sont multiples : package manquant ou pas importé, erreur dans le code ou le nom d'une fonction appelée, conflits de version, etc. 
+
+Dans ce cas, la procédure à appliquer est la suivante :
+- déterminer l'erreur en cause, possiblement en développant directement à partir d'un terminal sur le *Pod* de l'application ;
+- corriger l'erreur dans le code source et *pusher* les corrections sur le dépôt Git de l'application ;
+- le processus de CI va se lancer et regénérer une nouvelle image Docker ;
+- modifier le [tag de l'image](https://github.com/InseeFrLab/template-shiny-deployment/blob/master/values.yaml#L4) le cas échéant dans le fichier `values.yaml` ;
+- mettre à jour le déploiement du chart :
+  - `helm ls` pour identifier le nom du chart actuellement déployé
+  - `helm upgrade nom_chart_deploye chemin_du_depot_chart` pour mettre à jour le déploiement avec la nouvelle version du Chart.
+
+#### Si l'erreur vient de la configuration du déploiement
+
+Plaçons-nous maintenant dans le cas où l'erreur provient de la configuration du déploiement. Par exemple, un secret mal nommé, le nom ou le tag de l'image mal spécifié, un problème d'indentation dans le `values.yaml`, la dépendance au chart `Shiny` qui n'aurait pas été téléchargée, etc.
+
+Dans ce cas, la procédure à appliquer est plus courte, dans la mesure où il n'y a pas besoin de reconstruire l'image Docker de l'application :
+- utiliser les commandes décrites précédemment — en particulier `kubectl describe pod nom_du_pod` — pour identifier le problème ;
+- corriger le chart ;
+- mettre à jour le déploiement du chart :
+  - `helm ls` pour identifier le nom du chart actuellement déployé
+  - `helm upgrade nom_chart_deploye chemin_du_depot_chart` pour mettre à jour le déploiement avec la nouvelle version du Chart.
+
+### Problèmes fréquents
+
 ## Pour aller plus loin
 
 ### ShinyProxy
+
+

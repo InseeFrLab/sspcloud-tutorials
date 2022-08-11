@@ -2,24 +2,23 @@
 
 ## Sommaire
 
-- [Tutoriel : déploiement d'une application Shiny sur le SSP Cloud](#tutoriel---d-ploiement-d-une-application-shiny-sur-le-ssp-cloud)
-  * [Sommaire](#sommaire)
+- [Tutoriel : déploiement d'une application Shiny sur le SSP Cloud](#tutoriel---déploiement-d-une-application-shiny-sur-le-ssp-cloud)
   * [Contexte](#contexte)
   * [Environnement](#environnement)
-  * [Développement de l'application](#d-veloppement-de-l-application)
-    + [Mettre les données d'entrée sur MinIO](#mettre-les-donn-es-d-entr-e-sur-minio)
-    + [Phase de développement en self](#phase-de-d-veloppement-en-self)
+  * [Développement de l'application](#développement-de-lapplication)
+    + [Mettre les données d'entrée sur MinIO](#mettre-les-données-dentrée-sur-minio)
+    + [Phase de développement en self](#phase-de-développement-en-self)
     + [Packaging](#packaging)
     + [Conteneurisation](#conteneurisation)
-    + [Intégration continue (CI)](#int-gration-continue--ci-)
-  * [Déploiement de l'application](#d-ploiement-de-l-application)
-    + [Création d'un Chart Helm](#cr-ation-d-un-chart-helm)
-    + [Utilisation du stockage de données S3 avec MinIO](#utilisation-du-stockage-de-donn-es-s3-avec-minio)
-    + [Utilisation d'une base de données PostgreSQL](#utilisation-d-une-base-de-donn-es-postgresql)
-    + [Déploiement du chart Helm](#d-ploiement-du-chart-helm)
-  * [*Debugging*/maintenance de l'application](#-debugging--maintenance-de-l-application)
-    + [Commandes de *debugging*](#commandes-de--debugging-)
-    + [Procédure de *debugging*](#proc-dure-de--debugging-)
+    + [Intégration continue (CI)](#intégration-continue-ci)
+  * [Déploiement de l'application](#déploiement-de-lapplication)
+    + [Création d'un Chart Helm](#création-dun-chart-helm)
+    + [Utilisation du stockage de données S3 avec MinIO](#utilisation-du-stockage-de-données-s3-avec-minio)
+    + [Utilisation d'une base de données PostgreSQL](#utilisation-dune-base-de-données-postgresql)
+    + [Déploiement du chart Helm](#déploiement-du-chart-helm)
+  * [*Debugging*/maintenance de l'application](#debuggingmaintenance-de-lapplication)
+    + [Commandes de *debugging*](#commandes-de-debugging)
+    + [Procédure de *debugging*](#procédure-de-debugging)
   * [Pour aller plus loin](#pour-aller-plus-loin)
     + [ShinyProxy](#shinyproxy)
 
@@ -228,10 +227,11 @@ vscode-14710-7467fd678f-828kj                          1/1     Running   0      
 
 3 *Pods* sont actuellement déployés dans cet exemple. D'après les noms, celui qui nous intéresse est le second. Dans l'exemple, le *Pod* est marqué comme *Running* et est donc a priori en bonne santé. Il peut arriver que le pod soit en *Error* ou encore *CrashLoopBackoff*, ce qui peut signaler différents problèmes de déploiement.
 
-Une première étape pour tenter d'isoler la cause d'un déploiement en échec peut être de "**décrire** la ressource, en l'occurence le *Pod*. Cela permet de voir comment le *Pod* a été déployé (quelle image, quelles variables d'environnements, quels volumes attachés, etc.) et quels évènements se sont passés lors du déroulement. Souvent, les problèmes liés à la configuration du déploiement s'identifient ici.
+Une première étape pour tenter d'isoler la cause d'un déploiement en échec peut être de "**décrire**" (*describe*) la ressource, en l'occurence le *Pod*. Cela permet de voir comment le *Pod* a été déployé (quelle image, quelles variables d'environnements, quels volumes attachés, etc.) et quels évènements se sont passés lors du déroulement. Souvent, les problèmes liés à la configuration du déploiement s'identifient ici.
 
 ```
 $ kubectl describe pod template-shiny-deployment-1660144966-96f75849d-dbsr9
+...
 Events:
   Type    Reason     Age   From               Message
   ----    ------     ----  ----               -------
@@ -247,7 +247,7 @@ Events:
 
 Dans cet exemple, tout semble s'être bien déroulé : Kubernetes a téléchargé (*pull*) l'image voulue, et a créé le conteneur associé, qui a démarré normalement.
 
-Dans le cas où l'erreur provient de l'application elle-même, il est nécessaire d'aller analyser les *logs* du conteneur de notre application, ou de manière équivalente ceux du *Pod*, qui encapsule le conteneur.
+Dans le cas où l'erreur provient de l'application elle-même, il est nécessaire d'aller analyser les *logs* de notre application, ou de manière équivalente ceux du *Pod*, qui encapsule celle-ci.
 
 ```
 $ kubectl logs template-shiny-deployment-1660144966-96f75849d-dbsr9
@@ -259,11 +259,15 @@ Listening on http://0.0.0.0:3838
 
 Dans cet exemple, rien à signaler : le conteneur a executé la [commande de lancement](https://github.com/InseeFrLab/template-shiny-app/blob/main/Dockerfile#L24), ce qui a lancé l'application *Shiny* qui écoute sur l'adresse attendue.
 
-Souvent, les erreurs reportées dans les *logs* permettent de débugguer l'application. Parfois, ils sont insuffisants. Dans ce cas, il peut être utile de rentrer directement dans le conteneur en cours d'exécution, et d'y ouvrir un terminal. Il est alors possible d'y lancer R, et de tester le code d'exécution de l'application commande par commande pour identifier précisément la source de l'erreur.
+Souvent, les erreurs reportées dans les *logs* permettent de débugguer l'application. Parfois, ils sont insuffisants. Dans ce cas, il peut être utile de rentrer directement dans le conteneur en cours d'exécution, et d'y ouvrir un terminal.
 
 ```
 $ kubectl exec -it template-shiny-deployment-1660144966-96f75849d-dbsr9 -- bash
+Defaulted container "shiny" out of: shiny, wait-for-postgresql (init)
+$ root@template-shiny-deployment-1660144966-96f75849d-dbsr9:/#
 ```
+
+Il est alors possible d'y lancer R, et de tester le code d'exécution de l'application commande par commande pour identifier précisément la source de l'erreur.
 
 ### Procédure de *debugging*
 

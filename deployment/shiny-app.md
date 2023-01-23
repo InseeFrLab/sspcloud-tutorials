@@ -198,7 +198,7 @@ Le fichier [data.R](https://github.com/InseeFrLab/template-shiny-app/blob/main/m
 
 ### Déploiement du chart Helm
 
-Finalement, pour déployer l'application sur le cluster à partir du terminal d'un service VSCode :
+Finalement, pour déployer l'application sur le cluster à partir du terminal d'un service VSCode en ayant mis les droits admin dans l'onglet Kubernetes :
 - cloner le dépôt contenant le chart de **votre** application (pas le template)
 - importer les dépendances (en l'occurence, le chart [Shiny](https://github.com/InseeFrLab/helm-charts/tree/master/charts/shiny)) avec la commande `helm dependency update chemin_du_depot_chart`
 - installer le chart Helm : `helm install chemin_du_depot_chart --generate-name`
